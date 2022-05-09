@@ -14,7 +14,7 @@ import time
 
 class LogoDetectionHandler(tornado.web.RequestHandler):
 
-    async def detect():
+    async def detect(file_name):
       
         start_time = time.time()
 
@@ -40,7 +40,7 @@ class LogoDetectionHandler(tornado.web.RequestHandler):
         imgdetect = cv2.putText(imgdetect, str(dictImg["name"]), (dictImg["xmax"], dictImg["ymax"]), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 1, cv2.LINE_AA, False)
         
        
-        result_img = "result/"+path_img
+        result_img = "public/img/detected/"+file_name
 
         # CV2
         if not cv2.imwrite(result_img, imgdetect):
@@ -56,7 +56,8 @@ class LogoDetectionHandler(tornado.web.RequestHandler):
         # eltime = end-start_time,strImg = dictImg["confidence"], pathImg = r"result/rs1.jpg")
        
         dictImg["eltime"] = eltime
-
+        dictImg["pathimg"] = result_img
+        
         return dictImg
 
 
@@ -73,19 +74,21 @@ class uploadImgHandler(tornado.web.RequestHandler):
         files = self.request.files["imgFile"]
 
         for f in files:
-            fh = open(f"public/img/{f.filename}", "wb")
+            fh = open(f"public/img/origin/{f.filename}", "wb")
             fh.write(f.body)
             fh.close()
         
         #  uncommit
         global path_img
-        path_img = "public/img/"+f.filename
-       
+        path_img = "public/img/origin/"+f.filename
+        
+        file_name = f.filename
+
         global im
         im = cv2.imread(path_img)
         
        
-        temp_var = await LogoDetectionHandler.detect()
+        temp_var = await LogoDetectionHandler.detect(file_name)
 
         #print("confidence: ", temp_var["confidence"])
 
@@ -97,8 +100,6 @@ class uploadImgHandler(tornado.web.RequestHandler):
 
         #pathig = "http://localhost:8088" + r"/public/img/" + f.filename
         
-        pathig = r"result/public/img/" + str(f.filename)
-
         # tao uuid cho hinh anh
         id = uuid.uuid1()
         
@@ -118,7 +119,7 @@ class uploadImgHandler(tornado.web.RequestHandler):
 
         x = {
               "_id": str(id),
-              "pathimg": str(pathig),
+              "pathimg": str(temp_var["pathimg"]),
               "logo_detection_result" : logo_detection_result
         }
         
@@ -158,8 +159,8 @@ if (__name__ == "__main__"):
 
     app = tornado.web.Application([
         ("/", uploadImgHandler),
-        ("/public/img/(.*)", tornado.web.StaticFileHandler, {"path": "public/img"}),
-        ("/result/public/img/(.*)", tornado.web.StaticFileHandler, {"path": "result/public/img"}),
+        ("/public/img/origin/(.*)", tornado.web.StaticFileHandler, {"path": "public/img/origin"}),
+        ("/public/img/detected/(.*)", tornado.web.StaticFileHandler, {"path": "result/public/img/detected"}),
         ("/download",downloadImgHandler),
         ("/detect",LogoDetectionHandler),
         
