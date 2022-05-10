@@ -4,9 +4,9 @@ WORKDIR /usr/src/app
 
 COPY . .
 
-RUN pip install install tornado
+RUN pip install tornado
 RUN pip install -r requirements.txt
-RUN pip install install pymongo
+RUN pip install pymongo
 
 EXPOSE 8888
 
